@@ -3,8 +3,16 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Description: Basic Docker Repository
 
-
 Parameters:
+
+  RegistrySecret:
+    NoEcho: true
+    Type: String
+    Description: Registry HTTP secret
+    MinLength: 6
+    MaxLength: 41
+    AllowedPattern: "[a-zA-Z0-9]*"
+    ConstraintDescription: Secret must contain only alphanumeric characters
 
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
@@ -363,13 +371,14 @@ Resources:
               -e REGISTRY_STORAGE_S3_REGION=${AWS::Region} \
               -e REGISTRY_STORAGE_S3_BUCKET=${BucketName} \
               -e REGISTRY_HTTP_HOST=https://${RegistryHostname} \
-              -e REGISTRY_HTTP_SECRET=83aJd23Uefaafe-Ha \
+              -e REGISTRY_HTTP_SECRET=${RegistrySecret} \
               -e REGISTRY_REDIS_ADDR=${CacheEndpoint}:6379 \
               registry:2
               /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
             - BucketName: !Ref DockerImageBucket
               RegistryHostname: !Ref RegistryHostname
               CacheEndpoint: !GetAtt NetworkLoadBalancer.DNSName
+              RegistrySecret: !Ref RegistrySecret
         NetworkInterfaces:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
